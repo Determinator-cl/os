@@ -1,6 +1,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include "asm.h"
 #include "print.h"
 
 #define VGA_WIDTH 80
@@ -18,10 +19,22 @@ size_t strlen(const char* str) {
     return len;
 }
 
-uint8_t vga_entry_color(enum vga_color fg, enum vga_color bg) { return fg | bg << 4; }
-uint16_t vga_entry(unsigned char uc, uint8_t color) { return (uint16_t)uc | (uint16_t)color << 8; }
+uint8_t vga_entry_color(enum vga_color fg, enum vga_color bg) { return fg | (bg << 4); }
 
-void clear() {
+uint16_t vga_entry(unsigned char uc, uint8_t color) {
+    return (uint16_t)uc | ((uint16_t)color << 8);
+}
+
+void set_cursor_position(uint8_t x, uint8_t y) {
+    uint16_t pos = y * VGA_WIDTH + x;
+
+    outb(0x3D4, 0x0E);
+    outb(0x3D5, (uint8_t)(pos >> 8));
+    outb(0x3D4, 0x0F);
+    outb(0x3D5, (uint8_t)(pos & 0xFF));
+}
+
+void clear(void) {
     term_row = 0;
     term_column = 0;
     term_color = vga_entry_color(VGA_COLOR_LIGHT_GREY, VGA_COLOR_BLACK);
@@ -32,6 +45,7 @@ void clear() {
             term_buffer[idx] = vga_entry(' ', term_color);
         }
     }
+    set_cursor_position(term_column, term_row);
 }
 
 void term_setcolor(uint8_t color) { term_color = color; }
@@ -42,14 +56,30 @@ void term_put_entry_at(char c, uint8_t color, size_t x, size_t y) {
 }
 
 void print_char(char c) {
-    term_put_entry_at(c, term_color, term_column, term_row);
-    if (++term_column == VGA_WIDTH) {
+    if (c == '\n') {
         term_column = 0;
-        if (++term_row == VGA_HEIGHT) term_row = 0;
+        term_row++;
+    } else if (c == '\r') {
+        term_column = 0;
+    } else {
+        term_put_entry_at(c, term_color, term_column, term_row);
+        if (++term_column == VGA_WIDTH) {
+            term_column = 0;
+            term_row++;
+        }
     }
+
+    if (term_row >= VGA_HEIGHT) {
+        term_row = 0;
+        term_column = 0;
+    }
+
+    set_cursor_position(term_column, term_row);
 }
 
 void print_str(char* str) {
     size_t size = strlen(str);
-    for (size_t i = 0; i < size; i++) print_char(str[i]);
+    for (size_t i = 0; i < size; i++) {
+        print_char(str[i]);
+    }
 }
