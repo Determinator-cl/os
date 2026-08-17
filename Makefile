@@ -22,7 +22,11 @@ all: ./build/os.bin
 	mkdir -p build
 	clang -target i386-unknown-none-elf -ffreestanding -nostdlib -mno-red-zone -c $< -o $@
 
-./build/kernel.bin: ./build/load_kernel.o ./build/kernel.o ./build/asm.o ./build/idt.o
+./build/print.o: ./src/libs/print.c
+	mkdir -p build
+	clang -target i386-unknown-none-elf -ffreestanding -nostdlib -mno-red-zone -c $< -o $@
+		
+./build/kernel.bin: ./build/load_kernel.o ./build/kernel.o ./build/asm.o ./build/idt.o ./build/print.o
 	ld.lld -m elf_i386 -T ./src/linker.ld $^ -o ./build/kernel.elf
 	llvm-objcopy -O binary ./build/kernel.elf $@
 
