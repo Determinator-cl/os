@@ -74,4 +74,9 @@ void register_int_handler(uint8_t vector, int_handler_t hand_address) {
     int_enable();
 }
 
-void idt_init() { pic_remap(); }
+void idt_init() {
+    pic_remap();
+
+    extern void keyboard_int_handler_asm();
+    register_int_handler(0x21, &keyboard_int_handler_asm);
+}

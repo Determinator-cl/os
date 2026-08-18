@@ -10,6 +10,8 @@
 
 size_t term_row;
 size_t term_column;
+size_t cursor_y;
+size_t cursor_x;
 uint8_t term_color;
 uint16_t* term_buffer = (uint16_t*)VGA_MEMORY;
 
@@ -27,6 +29,8 @@ uint16_t vga_entry(unsigned char uc, uint8_t color) {
 
 void set_cursor_position(uint8_t x, uint8_t y) {
     uint16_t pos = y * VGA_WIDTH + x;
+    cursor_x = x;
+    cursor_y = y;
 
     outb(0x3D4, 0x0E);
     outb(0x3D5, (uint8_t)(pos >> 8));
@@ -48,7 +52,7 @@ void clear(void) {
     set_cursor_position(term_column, term_row);
 }
 
-void term_setcolor(uint8_t color) { term_color = color; }
+void term_set_color(uint8_t color) { term_color = color; }
 
 void term_put_entry_at(char c, uint8_t color, size_t x, size_t y) {
     const size_t idx = y * VGA_WIDTH + x;
@@ -74,7 +78,9 @@ void print_char(char c) {
         term_column = 0;
     }
 
-    set_cursor_position(term_column, term_row);
+    cursor_y = term_row;
+    cursor_x = term_column;
+    set_cursor_position(cursor_x, term_row);
 }
 
 void print_str(char* str) {

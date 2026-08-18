@@ -14,6 +14,10 @@ all: ./build/os.bin
 	mkdir -p build
 	nasm -f elf32 -g $< -o $@
 
+./build/keyboard_int_handler_asm.o: ./src/drivers/keyboard/keyboard_handler.asm
+	mkdir -p build
+	nasm -f elf32 -g $< -o $@
+
 ./build/kernel.o: ./src/kernel/kernel.c
 	mkdir -p build
 	clang -target i386-unknown-none-elf -ffreestanding -nostdlib -mno-red-zone -c $< -o $@
@@ -25,8 +29,12 @@ all: ./build/os.bin
 ./build/print.o: ./src/libs/print.c
 	mkdir -p build
 	clang -target i386-unknown-none-elf -ffreestanding -nostdlib -mno-red-zone -c $< -o $@
+
+./build/keyboard_int_handler.o: ./src/drivers/keyboard/keyboard.c
+	mkdir -p build
+	clang -target i386-unknown-none-elf -ffreestanding -nostdlib -mno-red-zone -c $< -o $@
 		
-./build/kernel.bin: ./build/load_kernel.o ./build/kernel.o ./build/asm.o ./build/idt.o ./build/print.o
+./build/kernel.bin: ./build/load_kernel.o ./build/kernel.o ./build/asm.o ./build/keyboard_int_handler_asm.o ./build/keyboard_int_handler.o ./build/idt.o ./build/print.o
 	ld.lld -m elf_i386 -T ./src/linker.ld $^ -o ./build/kernel.elf
 	llvm-objcopy -O binary ./build/kernel.elf $@
 
